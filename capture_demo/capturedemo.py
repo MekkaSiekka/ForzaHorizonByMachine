@@ -14,7 +14,7 @@ with mss.mss() as sct:
 
         # Get raw pixels from the screen, save it to a Numpy array
         img = numpy.array(sct.grab(monitor))
-
+        print(img.shape)
         # Display the picture
         cv2.imshow("OpenCV/Numpy normal", img)
 
@@ -28,3 +28,4 @@ with mss.mss() as sct:
         if cv2.waitKey(25) & 0xFF == ord("q"):
             cv2.destroyAllWindows()
             break
+
