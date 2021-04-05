@@ -20,7 +20,6 @@ class KeyBoardStatus:
         self.mResult[1] = self.mKeyboardStatus['a']
         self.mResult[2] = self.mKeyboardStatus['s']
         self.mResult[3] = self.mKeyboardStatus['d']
-        print("result is",self.mResult)
     def on_press(self,key):
         try:
             # print('{0} pressed'.format(
@@ -60,10 +59,10 @@ class KeyBoardStatus:
         self.mIsPlaying = True
     
 
-result = np.array([0,0,0,0])
-kb_status = KeyBoardStatus(result)
-kb_status.start()
+# result = np.array([0,0,0,0])
+# kb_status = KeyBoardStatus(result)
+# kb_status.start()
 
-while 1:
-    print(result)
-    time.sleep(0.001)
+# while 1:
+#     print(result)
+#     time.sleep(0.001)
