@@ -4,9 +4,9 @@ import cv2
 import mss
 import numpy
 
+import logging
 
-
-
+logging.basicConfig(level=logging.INFO)
 
 def getScreenNumpy():
     with mss.mss() as sct:
@@ -85,6 +85,7 @@ if __name__ == "__main__":
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
+    '''
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                             download=True, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
@@ -98,6 +99,7 @@ if __name__ == "__main__":
     classes = ('plane', 'car', 'bird', 'cat',
             'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
+    
     # get some random training images
     dataiter = iter(trainloader)
     images, labels = dataiter.next()
@@ -106,7 +108,7 @@ if __name__ == "__main__":
     #imshow(torchvision.utils.make_grid(images))
     # print labels
     print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
-
+    '''
 
     net = Net()
 
@@ -114,7 +116,7 @@ if __name__ == "__main__":
 
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
 
-    print("The device is selected as",device)
+    logging.info("The device is selected as %s" % device)
     net.to(device)
 
 
@@ -126,10 +128,10 @@ if __name__ == "__main__":
 
     for epoch in range(2):
         running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
+        for i in range(0,4):
             # get the inputs; data is a list of [inputs, labels]
             #inputs, labels = data
-            inputs, labels = data[0].to(device), data[1].to(device)
+            # inputs, labels = data[0].to(device), data[1].to(device)
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -144,8 +146,8 @@ if __name__ == "__main__":
             # print statistics
             running_loss += loss.item()
             if i % 200 == 0:    # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
+                logging.info('[%d, %5d] loss: %.3f' %
                     (epoch + 1, i + 1, running_loss / 200))
                 running_loss = 0.0
 
-    print('Finished Training')
+    logging.info('Finished Training')

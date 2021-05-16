@@ -1,7 +1,8 @@
 import time
 
-import cv2
+
 import mss
+import cv2
 import numpy
 
 
