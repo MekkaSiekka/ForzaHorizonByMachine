@@ -24,7 +24,7 @@ def getScreenNumpy():
         monitor = {"top": 40, "left": 0, "width": 800, "height": 640}
         # print(data[0].size())
         scr_img = np.array(sct.grab(monitor))
-        scr_img = cv2.resize(scr_img, (32,32),interpolation=cv2.INTER_CUBIC)
+        scr_img = cv2.resize(scr_img, (512,512),interpolation=cv2.INTER_CUBIC)
         scr_img = np.moveaxis(scr_img,-1,0)
         scr_img = scr_img[0:3,:,:] #discard alpha channel
         ll = []
@@ -63,18 +63,19 @@ import torch.nn.functional as F
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 200, 5)
+        self.conv1 = nn.Conv2d(3, 20, 3, padding = 1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(200, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.conv2 = nn.Conv2d(20, 16, 3, padding = 1)
+        self.fc1 = nn.Linear(16 * 128 * 128, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
+        
         print(x.shape)
-        x = x.reshape(-1, 16 * 5 * 5)  #what is the progblem if use view?
+        x = x.reshape(-1, 16 * 128 * 128)  #what is the progblem if use view?
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
