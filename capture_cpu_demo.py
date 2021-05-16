@@ -1,10 +1,20 @@
-import time
+from keyboard_read.demo import KeyBoardStatus
 
+
+
+import time
 import cv2
 import mss
-import numpy
+import numpy as np
 
+import torch
+import torchvision
+import torchvision.transforms as transforms
+
+import matplotlib.pyplot as plt
 import logging
+
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,10 +23,10 @@ def getScreenNumpy():
         # Part of the screen to capture
         monitor = {"top": 40, "left": 0, "width": 800, "height": 640}
         # print(data[0].size())
-        scr_img = numpy.array(sct.grab(monitor))
+        scr_img = np.array(sct.grab(monitor))
         scr_img = cv2.resize(scr_img, (32,32),interpolation=cv2.INTER_CUBIC)
         scr_img = np.moveaxis(scr_img,-1,0)
-        scr_img = scr_img[0:3,:,:]
+        scr_img = scr_img[0:3,:,:] #discard alpha channel
         ll = []
         for i in range(BATCH_SIZE):
             ll.append(scr_img)
@@ -26,20 +36,14 @@ def getScreenNumpy():
         return inputs2
 
 def getCustomeLabel():
-    np_label = numpy.array([1,1,1,1])
+    np_label = np.array([1,1,1,1])
     labels = torch.from_numpy(np_label).long().to(device)
+    labels = torch.from_numpy(keyboard_result).long().to(device)
+    print(labels)
     #print(labels)
     return labels 
 
-import torch
-import torchvision
-import torchvision.transforms as transforms
 
-
-
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 # functions to show an image
 
@@ -69,6 +73,7 @@ class Net(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
+        print(x.shape)
         x = x.reshape(-1, 16 * 5 * 5)  #what is the progblem if use view?
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -77,10 +82,13 @@ class Net(nn.Module):
 
 
 if __name__ == "__main__":
+    logging.info("logging started")
+    
     BATCH_SIZE = 4
-    print("log succeeded")
-
-
+    
+    keyboard_result =  np.array([0,0,0,0])
+    kb_status = KeyBoardStatus(keyboard_result)
+    kb_status.start()
     transform = transforms.Compose(
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -128,7 +136,9 @@ if __name__ == "__main__":
 
     for epoch in range(2):
         running_loss = 0.0
-        for i in range(0,4):
+        i = 0
+        while 1:
+            i += 1
             # get the inputs; data is a list of [inputs, labels]
             #inputs, labels = data
             # inputs, labels = data[0].to(device), data[1].to(device)
@@ -145,6 +155,7 @@ if __name__ == "__main__":
 
             # print statistics
             running_loss += loss.item()
+            logging.info('instant loss %f',loss.item())
             if i % 200 == 0:    # print every 2000 mini-batches
                 logging.info('[%d, %5d] loss: %.3f' %
                     (epoch + 1, i + 1, running_loss / 200))

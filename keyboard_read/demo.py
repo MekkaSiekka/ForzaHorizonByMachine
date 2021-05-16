@@ -59,10 +59,11 @@ class KeyBoardStatus:
         self.mIsPlaying = True
     
 
-# result = np.array([0,0,0,0])
-# kb_status = KeyBoardStatus(result)
-# kb_status.start()
+if __name__ == "__main__": 
+    result = np.array([0,0,0,0])
+    kb_status = KeyBoardStatus(result)
+    kb_status.start()
 
-# while 1:
-#     print(result)
-#     time.sleep(0.001)
+    while 1:
+        print(result)
+        time.sleep(0.001)
