@@ -1,3 +1,4 @@
+from os import getcwd
 from keyboard_read.demo import KeyBoardStatus
 
 
@@ -21,24 +22,32 @@ logging.basicConfig(level=logging.INFO)
 def getScreenNumpy():
     with mss.mss() as sct:
         # Part of the screen to capture
-        monitor = {"top": 40, "left": 0, "width": 800, "height": 640}
+        monitor = {"top": 40, "left": 0, "width": 1920, "height": 1080}
         # print(data[0].size())
         scr_img = np.array(sct.grab(monitor))
+        cv2.imshow("OpenCV/Numpy normal", scr_img)
+        cv2.waitKey(100)
         scr_img = cv2.resize(scr_img, (512,512),interpolation=cv2.INTER_CUBIC)
         scr_img = np.moveaxis(scr_img,-1,0)
         scr_img = scr_img[0:3,:,:] #discard alpha channel
+        scr_img = scr_img.astype(float)
+        scr_img /= 255
         ll = []
         for i in range(BATCH_SIZE):
             ll.append(scr_img)
         inputs2 = np.stack(ll, axis=0)
+        
         # print("after stack shape",inputs2.shape)
         inputs2 = torch.from_numpy(inputs2).float().to(device)
         return inputs2
 
 def getCustomeLabel():
     np_label = np.array([1,1,1,1])
-    labels = torch.from_numpy(np_label).long().to(device)
-    labels = torch.from_numpy(keyboard_result).long().to(device)
+    labels = torch.from_numpy(np_label).float().to(device)
+    
+    ll = [keyboard_result]
+    labels = np.stack(ll,axis = 0)    
+    labels = torch.from_numpy(labels).float().to(device) #todo: fix this !!
     print(labels)
     #print(labels)
     return labels 
@@ -63,18 +72,17 @@ import torch.nn.functional as F
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 20, 3, padding = 1)
+        self.conv1 = nn.Conv2d(3, 8, 3, padding = 1)
         self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(20, 16, 3, padding = 1)
+        self.conv2 = nn.Conv2d(8, 16, 3, padding = 1)
         self.fc1 = nn.Linear(16 * 128 * 128, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.fc3 = nn.Linear(84, 4)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        
-        print(x.shape)
+        #print(x.shape)
         x = x.reshape(-1, 16 * 128 * 128)  #what is the progblem if use view?
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -85,7 +93,7 @@ class Net(nn.Module):
 if __name__ == "__main__":
     logging.info("logging started")
     
-    BATCH_SIZE = 4
+    BATCH_SIZE = 1
     
     keyboard_result =  np.array([0,0,0,0])
     kb_status = KeyBoardStatus(keyboard_result)
@@ -122,7 +130,7 @@ if __name__ == "__main__":
     net = Net()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+    device = "cpu"
     # Assuming that we are on a CUDA machine, this should print a CUDA device:
 
     logging.info("The device is selected as %s" % device)
@@ -131,7 +139,7 @@ if __name__ == "__main__":
 
     import torch.optim as optim
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 
@@ -149,8 +157,10 @@ if __name__ == "__main__":
             # forward + backward + optimize
             myinputs = getScreenNumpy()
             outputs = net(myinputs)
+            print("outputs", outputs)
+            labels = getCustomeLabel()
             #print(labels)
-            loss = criterion(outputs, getCustomeLabel())
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
 
