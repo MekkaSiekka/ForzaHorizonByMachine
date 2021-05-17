@@ -65,5 +65,5 @@ if __name__ == "__main__":
     kb_status.start()
 
     while 1:
-        print(result)
+        #print(result)
         time.sleep(0.001)

@@ -1,13 +1,11 @@
 from os import getcwd
-from keyboard_read.demo import KeyBoardStatus
-
+import keyboard
 
 
 import time
 import cv2
 import mss
 import numpy as np
-
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -26,7 +24,7 @@ def getScreenNumpy():
         # print(data[0].size())
         scr_img = np.array(sct.grab(monitor))
         cv2.imshow("OpenCV/Numpy normal", scr_img)
-        cv2.waitKey(100)
+        cv2.waitKey(10)
         scr_img = cv2.resize(scr_img, (512,512),interpolation=cv2.INTER_CUBIC)
         scr_img = np.moveaxis(scr_img,-1,0)
         scr_img = scr_img[0:3,:,:] #discard alpha channel
@@ -42,14 +40,18 @@ def getScreenNumpy():
         return inputs2
 
 def getCustomeLabel():
-    np_label = np.array([1,1,1,1])
-    labels = torch.from_numpy(np_label).float().to(device)
-    
+    keyboard_result = np.array([0,0,0,0])
+    if keyboard.is_pressed('w'):
+        keyboard_result[0] = 1
+    if keyboard.is_pressed('a'):
+        keyboard_result[1] = 1
+    if keyboard.is_pressed('s'):
+        keyboard_result[2] = 1
+    if keyboard.is_pressed('d'):
+        keyboard_result[3] = 1
     ll = [keyboard_result]
     labels = np.stack(ll,axis = 0)    
     labels = torch.from_numpy(labels).float().to(device) #todo: fix this !!
-    print(labels)
-    #print(labels)
     return labels 
 
 
@@ -89,15 +91,14 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x
 
-
+        
 if __name__ == "__main__":
+    #console.elevate(visible=not start_minimised)
     logging.info("logging started")
     
     BATCH_SIZE = 1
     
-    keyboard_result =  np.array([0,0,0,0])
-    kb_status = KeyBoardStatus(keyboard_result)
-    kb_status.start()
+
     transform = transforms.Compose(
         [transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -139,7 +140,7 @@ if __name__ == "__main__":
 
     import torch.optim as optim
 
-    criterion = nn.MSELoss()
+    criterion = nn.L1Loss()
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 
@@ -157,8 +158,11 @@ if __name__ == "__main__":
             # forward + backward + optimize
             myinputs = getScreenNumpy()
             outputs = net(myinputs)
+            # updateOutput(outputs)
             print("outputs", outputs)
+           
             labels = getCustomeLabel()
+            print("keyboard", labels)
             #print(labels)
             loss = criterion(outputs, labels)
             loss.backward()
