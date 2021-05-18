@@ -23,23 +23,16 @@ def getScreenNumpy():
         monitor = {"top": 40, "left": 0, "width": 1920, "height": 1080}
         # print(data[0].size())
         scr_img = np.array(sct.grab(monitor))
-        cv2.imshow("OpenCV/Numpy normal", scr_img)
-        cv2.waitKey(10)
+        # cv2.imshow("OpenCV/Numpy normal", scr_img)
+        # cv2.waitKey(10)
         scr_img = cv2.resize(scr_img, (512,512),interpolation=cv2.INTER_CUBIC)
         scr_img = np.moveaxis(scr_img,-1,0)
         scr_img = scr_img[0:3,:,:] #discard alpha channel
         scr_img = scr_img.astype(float)
         scr_img /= 255
-        ll = []
-        for i in range(BATCH_SIZE):
-            ll.append(scr_img)
-        inputs2 = np.stack(ll, axis=0)
-        
-        # print("after stack shape",inputs2.shape)
-        inputs2 = torch.from_numpy(inputs2).float().to(device)
-        return inputs2
+        return scr_img
 
-def getCustomeLabel():
+def getKeyboardNumpy():
     keyboard_result = np.array([0,0,0,0])
     if keyboard.is_pressed('w'):
         keyboard_result[0] = 1
@@ -49,12 +42,33 @@ def getCustomeLabel():
         keyboard_result[2] = 1
     if keyboard.is_pressed('d'):
         keyboard_result[3] = 1
+    return keyboard_result
+
+def getCustomeLabel():
+    keyboard_result = getKeyboardNumpy()
     ll = [keyboard_result]
     labels = np.stack(ll,axis = 0)    
     labels = torch.from_numpy(labels).float().to(device) #todo: fix this !!
     return labels 
 
+def batchNumpyToTensor(batch_numpy):
+    stacked = np.stack(batch_numpy, axis = 0)
+    tensors = torch.from_numpy(stacked).float().to(device)
+    return tensors
 
+def getOneBatch():
+    x_train_batch = []
+    y_train_batch = []
+    for i in range(0,BATCH_SIZE):
+        y_train = getKeyboardNumpy()
+        x_train = getScreenNumpy()
+        x_train_batch.append(x_train)
+        y_train_batch.append(y_train)
+    
+    x_train_batch = batchNumpyToTensor(x_train_batch)
+    y_train_batch = batchNumpyToTensor(y_train_batch)
+    return x_train_batch,y_train_batch
+    
 
 # functions to show an image
 
@@ -95,9 +109,9 @@ class Net(nn.Module):
 if __name__ == "__main__":
     #console.elevate(visible=not start_minimised)
     logging.info("logging started")
-    
+    torch.set_printoptions(precision=10)
+
     BATCH_SIZE = 1
-    
 
     transform = transforms.Compose(
         [transforms.ToTensor(),
@@ -154,17 +168,18 @@ if __name__ == "__main__":
             # inputs, labels = data[0].to(device), data[1].to(device)
             # zero the parameter gradients
             optimizer.zero_grad()
-
+            
+            start = time.time()
             # forward + backward + optimize
-            myinputs = getScreenNumpy()
-            outputs = net(myinputs)
+            x_train, y_train = getOneBatch()
+            logging.info("Time for preparing data {:f}".format(time.time()-start))
+            
+            y_pred = net(x_train)
             # updateOutput(outputs)
-            print("outputs", outputs)
-           
-            labels = getCustomeLabel()
-            print("keyboard", labels)
+            logging.info("Outputs %s" % y_pred)
+            logging.info("Keyboard %s" % y_train)
             #print(labels)
-            loss = criterion(outputs, labels)
+            loss = criterion(y_pred,y_train)
             loss.backward()
             optimizer.step()
 
